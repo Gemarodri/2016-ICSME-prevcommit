@@ -33,12 +33,19 @@
 <a id="designer-templates" class="anchor" href="#designer-templates" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Results</h3>
  <ul>
   <li>Fist stage</li>
+	<ol>
+	    <li><a href="https://guides.github.com/features/mastering-markdown/">Neutron</li>
+	    <li><a href="https://guides.github.com/features/mastering-markdown/">Horizon</li>
+	    <li><a href="https://guides.github.com/features/mastering-markdown/">Cinder</li>
+	    <li><a href="https://github.com/Gemarodri/2016-msr-prevcommit/tree/gh-pages/Nova">Nova</li>
+	</ol>
   <li>Second stage
   	<ol>
 	    <li><a href="https://guides.github.com/features/mastering-markdown/">Neutron</li>
 	    <li><a href="https://guides.github.com/features/mastering-markdown/">Horizon</li>
 	    <li><a href="https://guides.github.com/features/mastering-markdown/">Cinder</li>
 	    <li><a href="https://guides.github.com/features/mastering-markdown/">Nova</li>
+	</ol>
   </li>
 </ul> 
 

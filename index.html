@@ -32,7 +32,7 @@
 </ul> 
       <h3>
 <a id="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a> How to analize a bug report.</h3>
-<p>We explain how we analized the bug reports in Launchpad and Github, describing the decisions that we took in some situations. </p>
+<p>We explain how we have analized the bug reports in Launchpad and Github, describing the criteria that we have followed in some situations. </p>
 <h3>Nova and ElasticSearch</h3>
 <p> We start supposing that we already have all the identifiers of the tickets. So, we can go to the ulr of Launchpad and Github to see the description of the bug report.
   <ol>
@@ -67,7 +67,11 @@
         Complet Method Verification of availability-zone
       </pre>  
     </li>
+  </ol>
+  <p> At this moment we have all the information that we need in our empirical analysis, it's based on the stududy of the source code trying  to locate the origin of the bug. For this, we carried out two different methods, the first one is focused at line level whereas the other is focused on token level. The output is that sometimes we will find a commit that caused the bug but other times we don't. Also, this commit that caused the bug could be the last one that touch the line involved in the fix commit or could be other antecesor commit that we are ables/unables to locate. So, now we are going to describe the steps to locate the origin of the bug using the two methods.</p>
 
+<h3>Line level</h3>
+  <ol>
     <li> For each previous commit, find his parent and display the same information that before in the web, to can understand the moment in which this/these line/s was/were inserted and to be sure that the previous commit was who inserted these lines, avoiding that way the lines copied from other commits.
       <p>How we can know that the previous commit was clean in the moment in which it was inserted into the source code?</p>
         <ul>  
@@ -84,6 +88,44 @@
         </ul>
     <li>Removing the false positives previous commits. When we are analyzing the previous commit we have to realise whether the date in which this commit was committed was done after the date in which the bug report was reported, and in that case discard the previous commit.</li>
   </ol>
+<h3>Token level</h3>
+  <ol>
+    <li>We need the Tokenized Repository: Clone and fetch all the information from:
+      <p><a href="https://github.com/dmgerman/nova-token">https://github.com/dmgerman/nova-token</a></p></li> 
+
+    <li>We need the fix commit in each Bug report, we can extracte them from our previous analysis.</li>     
+    <li>For each commit we need its reference in the tokenized version. So, for example if we have the fix commit “3345ca029fd2527eec8de365a37779fd37809398” in Nova, to find the reference of this commit in the tokenized version of the repository we have to run the next command:
+      <pre>
+        nova-token$ git checkout p3345ca029fd2527eec8de365a37779fd37809398 
+        nova-token$ git log -1 | head -1
+        3190d69c63e36a5fb7297f190f4cedf5f454bdd7
+      </pre>
+
+      <p>And we have the reference: “3190d69c63e36a5fb7297f190f4cedf5f454bdd7”, Remember that before the id of the real commit in nova, we must write the 'p'</p>
+      <p>We could se the tokenized change in github in this url: <a href="https://github.com/dmgerman/nova-token/commit/3190d69c63e36a5fb7297f190f4cedf5f454bdd7"> https://github.com/dmgerman/nova-token/commit/3190d69c63e36a5fb7297f190f4cedf5f454bdd7 </a></p></li>
+
+    <li>To understand if the previous token caused the bug, we need extract the commit parent of the fix commit “3190d69c63e36a5fb7297f190f4cedf5f454bdd7”, to do that we can run the next command:
+      <pre>
+        nova-token$ git log --parents -1 3190d69c63e36a5fb7297f190f4cedf5f454bdd7
+        commit 3190d69c63e36a5fb7297f190f4cedf5f454bdd7 b5530c6fcea83d230040a4fd80b8619191c234b7
+        [...]
+      </pre>
+      <p> We obtain that the commit parent in the tokenized version is “b5530c6fcea83d230040a4fd80b8619191c234b7”.</p></li>
+    <li>To see each token before the fix commit and understand if it was the cause of the bug, we can Blame the files involved in the fix commit:
+      <p>Tokenized file Blame: <a href ="https://github.com/dmgerman/nova-token/blame/b5530c6fcea83d230040a4fd80b8619191c234b7/nova/virt/libvirt/driver.py">https://github.com/dmgerman/nova-token/blame/b5530c6fcea83d230040a4fd80b8619191c234b7/nova/virt/libvirt/driver.py</a></p></li>
+
+    <li>Look if the token that cause the bug was written in the previous commit or not. To do this we have to remember that the previous commit in the tokenized repository are different from the normal repository, so we have to look for the reference of this previous commit: example: commit that injected the bug token: 88ab9369 commit that injected the buggy line: 400f946
+      <pre>
+        nova-token/nova$ git checkout 400f946
+        Previous HEAD position was a567e1b... Fix CellStateManagerFile init to failure
+        HEAD is now at 400f946... Load cell data from a configuration file
+
+        /nova-token/nova$ git describe
+        p88ab9369e3ddfd8b8684bf280330ff8d37a74b2bç
+      </pre></li>
+      <p>In this case, the token that caused the bug was inserted in the previous commit.</p>
+  </ol>
+    
 
 <p>At the end, we have semi-automatized this methodology. In ElasticSearch building a python script 'elastic.py' which interact with the research asking for the bug ID, the fix commit and the previous commits. The script opens many web pages where you can find all the information and decide if the previous commit inserted a clen lines or a buggy lines in the moment in which they was merged into the source code. Also, this script save the information in a json file. In Nova using the web tool <a href="bugtracking.libresoft.es">BugTracking</a> which help us with this anlaisis in Openstack projects. </p>
 <p style="font-family:sans-serif;" >What information we need to save?
@@ -109,31 +151,10 @@
     </ul>
   </p>
 </p>
-<h3>In Nova</h3>
 
 <h3>
 <a id="designer-templates" class="anchor" href="#designer-templates" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Results</h3>
-<p>Here, we present results of the two different stages involved in our empirical study. The first stage contains many files with all the information extracted about the tickets by the researchers in each projects. </p>
- <ul>
-  <li>Fist stage</li>
-	<ol>
-	    <li><a href="https://github.com/Gemarodri/Reprodu-Package/tree/gh-pages/TicketsAnalyzedNeutron">Neutron</li>
-	    <li><a href="https://github.com/Gemarodri/Reprodu-Package/tree/gh-pages/TicketsAnalyzedHorizon">Horizon</li>
-	    <li><a href="https://github.com/Gemarodri/Reprodu-Package/tree/gh-pages/TicketsAnalyzedCinder">Cinder</li>
-	    <li><a href="https://github.com/Gemarodri/Reprodu-Package/tree/gh-pages/TicketsAnalyzedNova">Nova</a></li>
-	</ol>
-  </ul>
-  <p>The second stage contains all the files analyzed with the information about how affect the previous commit in a fix bug. </p>
-  <ul>
-  <li>Second stage</li>
-  	<ol>
-	    <li><a href="https://github.com/Gemarodri/PrevCommitNeutron">Neutron</li>
-	    <li><a href="https://github.com/Gemarodri/PrevCommitHorizon">Horizon</li>
-	    <li><a href="https://github.com/Gemarodri/PrevCommitCinder">Cinder</li>
-	    <li><a href="https://github.com/Gemarodri/PrevCommitNova">Nova</li>
-	    <li><a href="https://github.com/Gemarodri/Reprodu-Package/tree/gh-pages/Deleting_Noise">Delete Noise</li>
-	</ol>
-</ul>
+
 <h3>
 <a id="creating-pages-manually" class="anchor" href="#creating-pages-manually" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Scripts</h3>
 

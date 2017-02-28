@@ -88,43 +88,6 @@
         </ul>
     <li>Removing the false positives previous commits. When we are analyzing the previous commit we have to realise whether the date in which this commit was committed was done after the date in which the bug report was reported, and in that case discard the previous commit.</li>
   </ol>
-<h3>Token level</h3>
-  <ol>
-    <li>We need the Tokenized Repository: Clone and fetch all the information from:
-      <p><a href="https://github.com/dmgerman/nova-token">https://github.com/dmgerman/nova-token</a></p></li> 
-
-    <li>We need the fix commit in each Bug report, we can extracte them from our previous analysis.</li>     
-    <li>For each commit we need its reference in the tokenized version. So, for example if we have the fix commit “3345ca029fd2527eec8de365a37779fd37809398” in Nova, to find the reference of this commit in the tokenized version of the repository we have to run the next command:
-      <pre>
-        nova-token$ git checkout p3345ca029fd2527eec8de365a37779fd37809398 
-        nova-token$ git log -1 | head -1
-        3190d69c63e36a5fb7297f190f4cedf5f454bdd7
-      </pre>
-
-      <p>And we have the reference: “3190d69c63e36a5fb7297f190f4cedf5f454bdd7”, Remember that before the id of the real commit in nova, we must write the 'p'</p>
-      <p>We could se the tokenized change in github in this url: <a href="https://github.com/dmgerman/nova-token/commit/3190d69c63e36a5fb7297f190f4cedf5f454bdd7"> https://github.com/dmgerman/nova-token/commit/3190d69c63e36a5fb7297f190f4cedf5f454bdd7 </a></p></li>
-
-    <li>To understand if the previous token caused the bug, we need extract the commit parent of the fix commit “3190d69c63e36a5fb7297f190f4cedf5f454bdd7”, to do that we can run the next command:
-      <pre>
-        nova-token$ git log --parents -1 3190d69c63e36a5fb7297f190f4cedf5f454bdd7
-        commit 3190d69c63e36a5fb7297f190f4cedf5f454bdd7 b5530c6fcea83d230040a4fd80b8619191c234b7
-        [...]
-      </pre>
-      <p> We obtain that the commit parent in the tokenized version is “b5530c6fcea83d230040a4fd80b8619191c234b7”.</p></li>
-    <li>To see each token before the fix commit and understand if it was the cause of the bug, we can Blame the files involved in the fix commit:
-      <p>Tokenized file Blame: <a href ="https://github.com/dmgerman/nova-token/blame/b5530c6fcea83d230040a4fd80b8619191c234b7/nova/virt/libvirt/driver.py">https://github.com/dmgerman/nova-token/blame/b5530c6fcea83d230040a4fd80b8619191c234b7/nova/virt/libvirt/driver.py</a></p></li>
-
-    <li>Look if the token that cause the bug was written in the previous commit or not. To do this we have to remember that the previous commit in the tokenized repository are different from the normal repository, so we have to look for the reference of this previous commit: example: commit that injected the bug token: 88ab9369 commit that injected the buggy line: 400f946
-      <pre>
-        nova-token/nova$ git checkout 400f946
-        Previous HEAD position was a567e1b... Fix CellStateManagerFile init to failure
-        HEAD is now at 400f946... Load cell data from a configuration file
-
-        /nova-token/nova$ git describe
-        p88ab9369e3ddfd8b8684bf280330ff8d37a74b2bç
-      </pre></li>
-      <p>In this case, the token that caused the bug was inserted in the previous commit.</p>
-  </ol>
     
 
 <p>At the end, we have semi-automatized this methodology. In ElasticSearch building a python script 'elastic.py' which interact with the research asking for the bug ID, the fix commit and the previous commits. The script opens many web pages where you can find all the information and decide if the previous commit inserted a clen lines or a buggy lines in the moment in which they was merged into the source code. Also, this script save the information in a json file. In Nova using the web tool <a href="bugtracking.libresoft.es">BugTracking</a> which help us with this anlaisis in Openstack projects. </p>
@@ -154,55 +117,12 @@
 
 <h3>
 <a id="designer-templates" class="anchor" href="#designer-templates" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Results</h3>
-
-<h3>
-<a id="creating-pages-manually" class="anchor" href="#creating-pages-manually" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Scripts</h3>
-
 <ul>
-  <li><a href="https://github.com/Gemarodri/Reprodu-Package/blob/gh-pages/elastic.py">elastic.py: </a></li> It is a python script that we use to analyse a Bug report in ElasticSearch. We must run it under the original reporitory of elasticsearch (https://github.com/elastic/elasticsearch) and it needs the number of the bug report. This script saves some information (id of Bug report, id of Pull request, id of fix commit, files involved in the fix commit, id of previous commits founded). The script asks you for some information after running it. An example is show below:
-  <pre>
-    $ python elastic.py 8438
-    // If there is any Pull request in the bug report type NONE
-    Please enter the FIX issue ID 8438: 8527
-    Please enter the commit ID :0c94314
-    // Insert the possible bug introducing commit, only one
-    Please enter the possible previous commits in src/main/.../aggregations/bucket/filter/FilterParser.java: c7f6c52
-    // When you have finished to inserting the possible bug introducing commits, press enter.
-    Please enter the possible previous commits in src/main/.../aggregations/bucket/filter/FilterParser.java: 
-    Please enter the possible previous commits in src/main/.../aggregations/bucket/filters/FiltersParser.java: 3c9c9f3
-    Please enter the possible previous commits in src/main/.../aggregations/bucket/filters/FiltersParser.java: 
-    // this is the data saved
-    {
-      "commitID": "0c94314", 
-      "files": [
-      "src/main/java/org/elasticsearch/search/aggregations/bucket/filter/FilterParser.java", 
-      "src/main/java/org/elasticsearch/search/aggregations/bucket/filters/FiltersParser.java", 
-      ], 
-      "fixedID": "8527", 
-      "issueID": "8438", 
-      "parentID": "4b5592c", 
-      "previousCommit": [
-        "c7f6c52@src/main/java/org/elasticsearch/search/aggregations/bucket/filter/FilterParser.java", 
-        "3c9c9f3@src/main/java/org/elasticsearch/search/aggregations/bucket/filters/FiltersParser.java", 
-      ]
-    }
- </pre>
-  <li><a href="https://github.com/Gemarodri/Reprodu-Package/blob/gh-pages/elastic.sh">elastic.sh</a></li> It is a bash script which only open the chromium-browser, and is being use by the elastic.py to open a different browser from mozilla, this way you can see in one browser the fix commit changes and in the other browser the git blame file.
-  <li><a href="https://github.com/Gemarodri/Reprodu-Package/blob/gh-pages/elasticIDBugs.py">elasticIDBugs.py</a></li> It is a python script that give you the id of the bug reports in a random way.
-  <li><a href="https://github.com/Gemarodri/Reprodu-Package/blob/gh-pages/studyOfTokens.py">studyOfTokens.py</a></li> It is a python script that we use to analyze the commit that inserted the buggy token, this script opens some webpages where you can track easily all the changes done in a file and the blame. The script asks you for some information after running it.
-  <pre>
-    //You must insert the fix commit change that you want analyze
-    $ python studyOfTokens.py 50636a881b60f112027494bcd84af66888db8c1c
-    //The script opens 2 web pages, one with the fix commit change in Nova and the other with the fix commit change in Nova tokenized 
-    ('Token Fixed Commit ID:', 'dc9c6ce72d95c35e89347207d9279034b393340c')
-    ('Token Parent Fix Commit ID:', '0d9f156')
-    ('Nova Parent Fix Commit ID:', 'b6a5ce0')
-    //The script opens 2 web pages, one with the blame file in Nova and the other with the blame file in Nova tokenized 
-    Please enter the file:nova/virt/hyperv/driver.py
-    Please enter the file:nova/tests/virt/hyperv/test_vmutils.py
-    // The script stops when doesn't has more files to blame
-    Please enter the file:
- </pre>
+  <li><a href="https://github.com/Gemarodri/Reprodu-Package/blob/gh-pages/Results/elasticSearch/analysis(C)-json"> ElasticSearch:</a></li> Here you can find a reporsitory with all the results of each ticket analyzed in ElasticSearch. The results of each ticket are in json format.  
+
+   
+  <li><a href="https://github.com/Gemarodri/Reprodu-Package/blob/gh-pages/Results/elasticSearch/analysis(C)-json">Nova:</a></li> Here you can find a reporsitory with all the results of each ticket analyzed in nova. The results of each ticket are in json format.  
+
 </ul> 
 
 <h3>
